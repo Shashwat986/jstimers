@@ -1,9 +1,11 @@
+from __future__ import print_function
 import threading
 import atexit
 
+
 def test():
     """Test function. Prints "Hello World". Returns None"""
-    print "Hello World"
+    print ("Hello World")
     
 def noop():
     """Test function. Does nothing."""
@@ -30,75 +32,81 @@ def _new_timeout_id():
     _timeout_ctr += 1
     return _timeout_ctr
 
-def setTimeout(f,time):
-    """Creates a Timer event that runs the function 'f' after 'time' (in milliseconds) duration.
+def setTimeout(f, delay, *args, **kwargs):
+    """Creates a Timer event that runs the function 'f' after 'delay' (in milliseconds) duration.
     
     f: function to be called
-    time: time in milliseconds after which f will be called.
+    delay: time in milliseconds after which f will be called.
+    [args,kwargs]: Parameters to be passed to the function 'f' on call.
     
     Returns: Timeout ID. Used by clearTimeout() to clear the timeout.
     """
     id = _new_timeout_id()
     def f_major():
-        f()
+        f(*args, **kwargs)
         try:
             del timeouts[id]
         except KeyError:
             pass
-    t = threading.Timer(1.0*time/1000,f_major)
+    t = threading.Timer(1.0*delay/1000,f_major)
     timeouts[id] = t
+    t.daemon = True
     t.start()
     return id
 
-def setInterval(f,time):
-    """Creates a Timer event that runs the function 'f' every 'time' milliseconds till cancelled.
+def setInterval(f,delay, *args, **kwargs):
+    """Creates a Timer event that runs the function 'f' every 'delay' milliseconds till cancelled.
     
     f: function to be called
-    time: time in milliseconds after which f will be repeatedly called.
+    delay: time in milliseconds after which f will be repeatedly called.
+    [args,kwargs]: Parameters to be passed to the function 'f' on call.
     
     Returns: Interval ID. Used by clearInterval() to clear the interval.
     """
     id = _new_interval_id()
     def f_major():
-        f()
-        t = threading.Timer(1.0*time/1000,f_major)
+        f(*args, **kwargs)
+        t = threading.Timer(1.0*delay/1000,f_major)
         intervals[id] = t
+        t.daemon = True
         t.start()
-    t = threading.Timer(1.0*time/1000,f_major)
+    t = threading.Timer(1.0*delay/1000,f_major)
     intervals[id] = t
+    t.daemon = True
     t.start()
     return id
 
 def clearInterval(id):
     """Cancels the Interval event with the specified ID."""
-    intervals[id].cancel()
     try:
+        intervals[id].cancel()
         del intervals[id]
+        return 0
     except KeyError:
-        pass
+        return 1
 
 def clearTimeout(id):
     """Cancels the Timeout event with the specified ID."""
-    timeouts[id].cancel()
     try:
+        timeouts[id].cancel()
         del timeouts[id]
+        return 0
     except KeyError:
-        pass
+        return 1
 
 @atexit.register
 def clearAll():
     """Clears all intervals/timeouts. Runs on exit."""
-    for id in intervals:
+    for id in list(intervals):
         clearInterval(id)
-    for id in timeouts:
+    for id in list(timeouts):
         clearTimeout(id)
-
 
 if __name__ == "__main__":
     print ("""Usage:
         
-        import intervals
-        
-        id = intervals.setInterval(intervals.test, 2000)
-        intervals.clearInterval(id)
+    import jstimers
+    
+    id = jstimers.setInterval(jstimers.test, 2000)
+    jstimers.clearInterval(id)
     """)
