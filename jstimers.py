@@ -41,18 +41,18 @@ def setTimeout(f, delay, *args, **kwargs):
     
     Returns: Timeout ID. Used by clearTimeout() to clear the timeout.
     """
-    id = _new_timeout_id()
+    t_id = _new_timeout_id()
     def f_major():
         f(*args, **kwargs)
         try:
-            del timeouts[id]
+            del timeouts[t_id]
         except KeyError:
             pass
     t = threading.Timer(1.0*delay/1000,f_major)
-    timeouts[id] = t
+    timeouts[t_id] = t
     t.daemon = True
     t.start()
-    return id
+    return t_id
 
 def setInterval(f,delay, *args, **kwargs):
     """Creates a Timer event that runs the function 'f' every 'delay' milliseconds till cancelled.
@@ -63,33 +63,33 @@ def setInterval(f,delay, *args, **kwargs):
     
     Returns: Interval ID. Used by clearInterval() to clear the interval.
     """
-    id = _new_interval_id()
+    i_id = _new_interval_id()
     def f_major():
         f(*args, **kwargs)
         t = threading.Timer(1.0*delay/1000,f_major)
-        intervals[id] = t
+        intervals[i_id] = t
         t.daemon = True
         t.start()
     t = threading.Timer(1.0*delay/1000,f_major)
-    intervals[id] = t
+    intervals[i_id] = t
     t.daemon = True
     t.start()
-    return id
+    return i_id
 
-def clearInterval(id):
+def clearInterval(i_id):
     """Cancels the Interval event with the specified ID."""
     try:
-        intervals[id].cancel()
-        del intervals[id]
+        intervals[i_id].cancel()
+        del intervals[i_id]
         return 0
     except KeyError:
         return 1
 
-def clearTimeout(id):
+def clearTimeout(t_id):
     """Cancels the Timeout event with the specified ID."""
     try:
-        timeouts[id].cancel()
-        del timeouts[id]
+        timeouts[t_id].cancel()
+        del timeouts[t_id]
         return 0
     except KeyError:
         return 1
@@ -97,16 +97,16 @@ def clearTimeout(id):
 @atexit.register
 def clearAll():
     """Clears all intervals/timeouts. Runs on exit."""
-    for id in list(intervals):
-        clearInterval(id)
-    for id in list(timeouts):
-        clearTimeout(id)
+    for i_id in list(intervals):
+        clearInterval(i_id)
+    for t_id in list(timeouts):
+        clearTimeout(t_id)
 
 if __name__ == "__main__":
     print ("""Usage:
         
     import jstimers
     
-    id = jstimers.setInterval(jstimers.test, 2000)
-    jstimers.clearInterval(id)
+    i_id = jstimers.setInterval(jstimers.test, 2000)
+    jstimers.clearInterval(i_id)
     """)
